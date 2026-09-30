@@ -20,7 +20,8 @@ export default function PublishedFormsPage() {
       setError("");
 
       const data = await getPublishedForms();
-      setForms(data);
+
+      setForms(data.items || []);
     } catch (err) {
       setError(
         err?.response?.data?.message || "Failed to load published forms.",

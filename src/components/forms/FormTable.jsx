@@ -5,21 +5,61 @@ import { useAuth, ROLES, hasRole } from "../../context/AuthContext.jsx";
 export default function FormTable({
   forms,
   deletingFormId,
+  sortBy,
+  sortOrder,
+  onSort,
   onEdit,
   onDelete,
   onManageFields,
   onPreview,
 }) {
   const { role } = useAuth();
+
+  function getSortIndicator(column) {
+    if (sortBy !== column) {
+      return "";
+    }
+
+    return sortOrder === "asc" ? " ↑" : " ↓";
+  }
+
   return (
     <div className="forms-table-container">
       <table className="forms-table">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>
+              <button
+                type="button"
+                className="table-sort-button"
+                onClick={() => onSort("name")}
+              >
+                Name{getSortIndicator("name")}
+              </button>
+            </th>
+
             <th>Description</th>
-            <th>Status</th>
-            <th>Created</th>
+
+            <th>
+              <button
+                type="button"
+                className="table-sort-button"
+                onClick={() => onSort("status")}
+              >
+                Status{getSortIndicator("status")}
+              </button>
+            </th>
+
+            <th>
+              <button
+                type="button"
+                className="table-sort-button"
+                onClick={() => onSort("createdAt")}
+              >
+                Created{getSortIndicator("createdAt")}
+              </button>
+            </th>
+
             <th>Actions</th>
           </tr>
         </thead>
@@ -89,6 +129,12 @@ FormTable.propTypes = {
   forms: PropTypes.array.isRequired,
 
   deletingFormId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+
+  sortBy: PropTypes.string,
+
+  sortOrder: PropTypes.oneOf(["asc", "desc"]),
+
+  onSort: PropTypes.func.isRequired,
 
   onEdit: PropTypes.func.isRequired,
 

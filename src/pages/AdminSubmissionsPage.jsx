@@ -11,9 +11,19 @@ export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState([]);
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState("submittedAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [loadingForms, setLoadingForms] = useState(true);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [error, setError] = useState("");
+  
 
   useEffect(() => {
     loadForms();
@@ -26,10 +36,10 @@ export default function AdminSubmissionsPage() {
 
       const data = await getForms();
 
-      setForms(data);
+      setForms(data.items || []);
 
-      if (data.length > 0) {
-        setSelectedFormId(String(data[0].id));
+      if (data.items?.length > 0) {
+        setSelectedFormId(String(data.items[0].id));
       }
     } catch (err) {
       console.error("Failed to load forms:", err);
@@ -47,16 +57,26 @@ export default function AdminSubmissionsPage() {
     }
 
     loadSubmissions();
-  }, [selectedFormId]);
+  }, [selectedFormId, page, pageSize, sortBy, sortOrder]);
 
-  async function loadSubmissions(searchValue = "") {
+  async function loadSubmissions(searchValue = search) {
     try {
       setLoadingSubmissions(true);
       setError("");
 
-      const data = await getFormResponses(selectedFormId, searchValue);
+      const data = await getFormResponses(selectedFormId, {
+        page,
+        pageSize,
+        search: searchValue,
+        sortBy,
+        sortOrder,
+      });
 
-      setSubmissions(data);
+      setSubmissions(data.items || []);
+      setTotalCount(data.totalCount || 0);
+      setTotalPages(data.totalPages || 0);
+      setHasPreviousPage(Boolean(data.hasPreviousPage));
+      setHasNextPage(Boolean(data.hasNextPage));
     } catch (err) {
       console.error("Failed to load submissions:", err);
 
@@ -69,12 +89,31 @@ export default function AdminSubmissionsPage() {
   function handleSearch(event) {
     event.preventDefault();
 
+    setPage(1);
     loadSubmissions(search);
   }
 
   function handleClearSearch() {
     setSearch("");
+    setPage(1);
     loadSubmissions("");
+  }
+
+  function handlePreviousPage() {
+    if (hasPreviousPage) {
+      setPage((previous) => previous - 1);
+    }
+  }
+
+  function handleNextPage() {
+    if (hasNextPage) {
+      setPage((previous) => previous + 1);
+    }
+  }
+
+  function handlePageSizeChange(event) {
+    setPageSize(Number(event.target.value));
+    setPage(1);
   }
 
   return (
@@ -131,7 +170,10 @@ export default function AdminSubmissionsPage() {
           <select
             id="form-select"
             value={selectedFormId}
-            onChange={(event) => setSelectedFormId(event.target.value)}
+            onChange={(event) => {
+              setSelectedFormId(event.target.value);
+              setPage(1);
+            }}
             disabled={loadingForms}
           >
             <option value="">
@@ -157,8 +199,8 @@ export default function AdminSubmissionsPage() {
             <div>
               <h2>Submissions</h2>
               <p>
-                {submissions.length} submission
-                {submissions.length !== 1 ? "s" : ""} found
+                {totalCount} submission
+                {totalCount !== 1 ? "s" : ""} found
               </p>
             </div>
           </div>
@@ -210,6 +252,42 @@ export default function AdminSubmissionsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Showing page {page} of {totalPages}
+            </div>
+
+            <div className="pagination-controls">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handlePreviousPage}
+                disabled={!hasPreviousPage}
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleNextPage}
+                disabled={!hasNextPage}
+              >
+                Next
+              </button>
+
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="page-size-select"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
         </div>
       )}

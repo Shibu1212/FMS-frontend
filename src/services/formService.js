@@ -1,9 +1,23 @@
 import api from "./api.js";
 
-export async function getForms() {
-  const response = await api.get("/Form");
+export async function getForms({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  sortBy = "createdAt",
+  sortOrder = "desc",
+} = {}) {
+  const response = await api.get("/Form", {
+    params: {
+      page,
+      pageSize,
+      search: search.trim() || undefined,
+      sortBy,
+      sortOrder,
+    },
+  });
 
-  return Array.isArray(response.data) ? response.data : [];
+  return response.data;
 }
 
 export async function getFormById(id) {
@@ -37,10 +51,24 @@ export async function deleteForm(id) {
   return response.data;
 }
 
-export async function getPublishedForms() {
-  const response = await api.get("/Form/published");
+export async function getPublishedForms({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  sortBy = "createdAt",
+  sortOrder = "desc",
+} = {}) {
+  const response = await api.get("/Form/published", {
+    params: {
+      page,
+      pageSize,
+      search: search.trim() || undefined,
+      sortBy,
+      sortOrder,
+    },
+  });
 
-  return Array.isArray(response.data) ? response.data : [];
+  return response.data;
 }
 
 export async function getPublishedFormById(id) {
@@ -101,10 +129,24 @@ export async function updateFormResponse(responseId, formId, values) {
   return response.data;
 }
 
-export async function getMyFormResponses() {
-  const response = await api.get("/FormResponse/my");
+export async function getMyFormResponses({
+  page = 1,
+  pageSize = 10,
+  search = "",
+  sortBy = "submittedAt",
+  sortOrder = "desc",
+} = {}) {
+  const response = await api.get("/FormResponse/my", {
+    params: {
+      page,
+      pageSize,
+      search: search.trim() || undefined,
+      sortBy,
+      sortOrder,
+    },
+  });
 
-  return Array.isArray(response.data) ? response.data : [];
+  return response.data;
 }
 
 export async function getFormResponseById(id) {
@@ -113,12 +155,25 @@ export async function getFormResponseById(id) {
   return response.data;
 }
 
-export async function getFormResponses(formId, search = "") {
+export async function getFormResponses(
+  formId,
+  {
+    page = 1,
+    pageSize = 10,
+    search = "",
+    sortBy = "submittedAt",
+    sortOrder = "desc",
+  } = {},
+) {
   const response = await api.get(`/FormResponse/form/${formId}`, {
     params: {
+      page,
+      pageSize,
       search: search.trim() || undefined,
+      sortBy,
+      sortOrder,
     },
   });
 
-  return Array.isArray(response.data) ? response.data : [];
+  return response.data;
 }

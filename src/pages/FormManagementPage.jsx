@@ -30,6 +30,18 @@ export default function FormManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(false);
   
   
 
@@ -65,17 +77,38 @@ export default function FormManagementPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [search]);
+
+  useEffect(() => {
     loadForms();
-  }, []);
+  }, [page, pageSize, debouncedSearch, sortBy, sortOrder]);
 
   async function loadForms() {
     try {
       setLoading(true);
       setError("");
 
-      const data = await getForms();
+      const data = await getForms({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
+      });
 
-      setForms(data);
+      setForms(data.items || []);
+      setTotalCount(data.totalCount || 0);
+      setTotalPages(data.totalPages || 0);
+      setHasPreviousPage(Boolean(data.hasPreviousPage));
+      setHasNextPage(Boolean(data.hasNextPage));
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load forms.");
     } finally {
@@ -97,6 +130,39 @@ export default function FormManagementPage() {
 
       return [];
     }
+  }
+
+  function handleSearchChange(event) {
+    setSearch(event.target.value);
+    setPage(1);
+  }
+
+  function handleSort(column) {
+    if (sortBy === column) {
+      setSortOrder((previous) => (previous === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+
+    setPage(1);
+  }
+
+  function handlePreviousPage() {
+    if (hasPreviousPage) {
+      setPage((previous) => previous - 1);
+    }
+  }
+
+  function handleNextPage() {
+    if (hasNextPage) {
+      setPage((previous) => previous + 1);
+    }
+  }
+
+  function handlePageSizeChange(event) {
+    setPageSize(Number(event.target.value));
+    setPage(1);
   }
 
   function openCreateModal() {
@@ -355,22 +421,76 @@ export default function FormManagementPage() {
 
       <section className="dashboard-section">
         <div className="section-header">
-          <h2 className="section-title">Forms</h2>
+          <div>
+            <h2 className="section-title">Forms</h2>
 
-          <span>{forms.length} forms</span>
+            <span>
+              {totalCount} {totalCount === 1 ? "form" : "forms"}
+            </span>
+          </div>
+
+          <input
+            type="text"
+            placeholder="Search forms..."
+            value={search}
+            onChange={handleSearchChange}
+            className="form-search-input"
+          />
         </div>
 
         {forms.length === 0 ? (
           <div className="empty-state">No forms found.</div>
         ) : (
-          <FormTable
-            forms={forms}
-            deletingFormId={deletingFormId}
-            onEdit={openEditModal}
-            onDelete={handleDelete}
-            onManageFields={openFieldManager}
-            onPreview={openPreviewModal}
-          />
+          <>
+            <FormTable
+              forms={forms}
+              deletingFormId={deletingFormId}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              onEdit={openEditModal}
+              onDelete={handleDelete}
+              onManageFields={openFieldManager}
+              onPreview={openPreviewModal}
+            />
+
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Showing page {page} of {totalPages}
+              </div>
+
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handlePreviousPage}
+                  disabled={!hasPreviousPage}
+                >
+                  Previous
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage}
+                >
+                  Next
+                </button>
+
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="page-size-select"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+          </>
         )}
       </section>
 

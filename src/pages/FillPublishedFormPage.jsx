@@ -31,12 +31,14 @@ export default function FillPublishedFormPage() {
 
       console.log("Published Form ID:", id);
 
-      const [formDataResponse, myResponses] = await Promise.all([
+      const [formDataResponse, myResponsesResponse] = await Promise.all([
         getPublishedFormById(id),
         getMyFormResponses(),
       ]);
 
       setForm(formDataResponse);
+
+      const myResponses = myResponsesResponse.items || [];
 
       const existing = myResponses.find(
         (response) => response.formId === Number(id),
